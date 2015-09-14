@@ -2,79 +2,56 @@ using System;
 using System.Threading;
 using System.IO;
 
- 
-public class Primes 
+
+namespace Tests.Prime
 {
-
-    // Finds the integer square root of a positive number  
-    static public long Lsqrt(long num) {  
-        if (0 == num) { return 0; }  // Avoid zero divide  
-        long n = (num / 2) + 1;       // Initial estimate, never low  
-        long n1 = (n + (num / n)) / 2;  
-        while (n1 < n) {  
-	    n = n1;  
-	    n1 = (n + (num / n)) / 2;  
-        }
-        return n;  
-    }
-
-    static public bool Prime(long n)
+    public class Primes 
     {
-	    for (long i=2; i<=Primes.Lsqrt(n); i++)
-	    {
-	        if (n % i == 0)
-	        {
-                return false;
-            }
-	    }
-        return true;
-    }
-
-    static public void Main(string[] args)
-    {
-        if (args == null || args.Length == 0)
+        static public void Main(string[] args)
         {
-            Console.WriteLine("Argument is required");
-        }
-        else
-        {
-            string inputFile = args[0];
-
-            // get file zise
-            FileInfo f = new FileInfo(inputFile);            
-            long fileSize = f.Length;
-
-            using(Stream source = File.OpenRead(inputFile))
+            if (args == null || args.Length == 0)
             {
-                PrimeManager mgr = new PrimeManager(source);
-                Console.WriteLine("Press any key to stop...");
-                
-                long currentOffset = 0;
-                while (!Console.KeyAvailable)
-                {
-                    int blockSize = mgr.RunBlock();
-                    if (blockSize == 0)
-                        break;
-                    
-                    currentOffset += blockSize;
-                    
-                    int w = Console.WindowWidth - "[>]".Length;
-                    int progress = (int)(w * currentOffset / fileSize);
-                    
-                    Console.Write("\r[{0}>{1}]", new String('=', progress), new String(' ', w-progress));
-                }
+                Console.WriteLine("Argument is required");
+            }
+            else
+            {
+                string inputFile = args[0];
 
-                Record? bestRecord = mgr.FindBestRecord();
-                
-                if (bestRecord == null)
-                    Console.WriteLine("Queue is not found");
-                else
+                // get file zise
+                FileInfo f = new FileInfo(inputFile);            
+                long fileSize = f.Length;
+
+                using(Stream source = File.OpenRead(inputFile))
                 {
-                    Record best = (Record)bestRecord;
-                    Console.WriteLine("Best queue: first prime={0}, first prime offset={1}, last prime={2}, last prime offset={3}, count of primes={4}", best.firstPrime, best.firstShift, best.lastPrime, best.lastShift, best.count);
+                    PrimeManager mgr = new PrimeManager(source);
+                    Console.WriteLine("Press any key to stop...");
+                    
+                    long currentOffset = 0;
+                    while (!Console.KeyAvailable)
+                    {
+                        int blockSize = mgr.RunBlock();
+                        if (blockSize == 0)
+                            break;
+                        
+                        currentOffset += blockSize;
+                        
+                        int w = Console.WindowWidth - "[>]".Length;
+                        int progress = (int)(w * currentOffset / fileSize);
+                        
+                        Console.Write("\r[{0}>{1}]", new String('=', progress), new String(' ', w-progress));
+                    }
+
+                    Record? bestRecord = mgr.FindBestRecord();
+                    
+                    if (bestRecord == null)
+                        Console.WriteLine("Queue is not found");
+                    else
+                    {
+                        Record best = (Record)bestRecord;
+                        Console.WriteLine("Best queue: first prime={0}, first prime offset={1}, last prime={2}, last prime offset={3}, count of primes={4}", best.firstPrime, best.firstShift, best.lastPrime, best.lastShift, best.count);
+                    }
                 }
             }
         }
     }
 }
-
