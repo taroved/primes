@@ -9,37 +9,89 @@ public class PrimeManager
 
     int threadCount;
     string filePath;
+
+    long offset = 0;
     
-    public PrimeManager(string filePath)
+    public PrimeManager(Stream fileStream)
     {
         threadCount = GetCoreCount() - 1; // minus one for better responsobility of keyboard
     }
 
     public RunBlock()
     {
+        byte[] buffer = new byte[BLOCK_SIZE * NUMBER_SIZE];
+        bytesRead = source.Read(buffer, 0, buffer.Length);
+        if (bytesRead > 0)
+        {
+            List<PrimeShiftPair> primeShiftPairs = new List<PrimeShiftPair>();
+            foreach (PrimeShiftPair pair in GetPrimeShiftPairs(ParseNumbers(buffer)))
+            {
+                UpdatePrimeSortedList(pair.prime, pair.shift + offset);
+            }
+            offset += bytesRead.Length / NUMBER_SIZE;
+        }   
+    }
+
+    SortedList<long, Record> sortedRecords = new SortedList<long, Record>(); 
+
+    void UpdatePrimeSortedList(long prime, long shift)
+    {
+        long previousIndex = BinarySearchSameOrPreviousRecordIndex(prime);
         
-    }
-
-    SortedList<RecordSortingKey, Record> sortedRecords = new SortedList<RecordSortingKey, Record>(); 
-    HashSet<long> primes = new HashSet<long>();
-
-    void UpdatePrimeSortedList(List<PrimeShiftPair> primeShiftPairs)
-    {
-        if (!primes.Contains(primeShiftPairs.prime))
-            sortedRecords.Add();
+        Record previous = sortedRecords.GetKey(previousIndex);
+        
+        if (previous.lastPrime == pair.prime)  // try to replace current lastPrime
+        {
+            if (previousIndex > 0)
+            {
+                Record beforePrevious = sortedRecords.GetKey(previousIndex - 1);
+                beforePrevious.count ++;
+                beforePrevious.lastPrime = prime;
+                beforePrevious.lastShift = shift;
+                if (beforePrevious > previous)
+                {
+                    sortedRecords[previousIndex] = beforePrevious;
+                }
+            }
+        }
+        else
+        {
+            previous.count ++;
+            previous.lastPrime = prime;
+            previous.lastShift = shift;
+            sortedRecords.Add(prime, previous);
+        }
     }
 
     ///<summary>
-    ///Find record which contain max lower lastPrime with max count and max firstPrime and min firstShift
+    ///Find key index for the prime or index of previous prime.
     ///</summary>
-    Record FindTraitRecord()
+    long BinarySearchSameOrPreviousRecordIndex(long prime)
+    {
+        long floor = 0;
+        long ceil = sortedRecords.Count-1;
+
+        while (floor <= ceil)
+        {
+            long current = (floor + ceiling) / 2;
+
+            if (prime == sortedRecords.GetKey(current) || (prime > sortedRecords.GetKey(current) && (current == sortedRecord.Count-1 || record < sortedRecords.GetKey(current+1))))
+                return current;
+            else if (sortedRecords.GetKey(current) < prime)
+                floor = current + 1;
+            else 
+                ceil = current - 1;
+        }
+
+        return -1;
+    }
 
     ///<summary>
-    ///Parse bytes array to list of number. Bytes is numbers in big-indian order.
+    ///Parse bytes array to list of number. Bytes is numbers in big-indian order. Ignore tail bytes.
     ///</summary>
-    static long[] ParseBytes(byte[0] bytes)
+    static long[] ParseNumbers(byte[0] bytes)
     {
-        long[] numbers = new long[bytes.Length / NUMBER_SIZE];
+        long[] numbers = new long[bytes.Length / NUMBER_SIZE]; 
         int ni = 0;
         for (int i=0; i<bytes.Length; i+=NUMBER_SIZE)
         {
@@ -59,7 +111,7 @@ public class PrimeManager
         for (int i=0; i<nums.Length; i++)
         {
             if (Prime(nums[i]))
-                l.Add(new PrimeShiftPair(nums[i], i));
+                l.Add(new PrimeShiftPair(nums[i], i);
         }
         return l;
     }
@@ -110,47 +162,55 @@ public class PrimeManager
         }
     }
 
-    struct Record
+    struct Record: IComparable
     {
-        public long firstPrime, firstShift, count, lastPrime;
+        public long firstPrime, firstShift, count, lastPrime, lastShift;
 
-        public Record(firstPrime, firstShift, count, lastPrime)
+        public Record(firstPrime, firstShift, count, lastPrime, lastShift)
         {
             this.firstPrime = firstPrime;
             this.firstShift = firstShift;
             this.count = count;
             this.lastPrime = lastPrime;
+            this.lastShift = lastShift;
         }
-    }
-
-    struct RecordSortingKey: IComparable
-    {
-        public long firstPrime, firstShift, count, lastPrime;
-
+        
         public int CompareTo(object obj) {
             if (obj == null) return 1;
 
             recordKey = obj as RecordSortingKey;
-            if (lastPrime > recordKey.lastPrime)
+            if (count > recordKey.count)
                 return -1;
-            else if (lastPrime == recordKey.lastPrime)
+            else if (count == recordKey.count)
             {
-                if (count > recordKey.count)
+                if (firstPrime > recordKey.firstPrime)
                     return -1;
-                else if (count == recordKey.count)
+                else if (firstPrime == recordKey.firstPrime)
                 {
-                    if (firstPrime > recordKey.firstPrime)
+                    if (firstShift < recordKey.firstShift)
                         return -1;
-                    else if (firstPrime == recordKey.firstPrime)
-                    {
-                        if (firstShift < recordKey.firstShift)
-                            return -1;
-                        else if (firstShift == recordKey.firstShift)
-                            return 0;
-                    }
+                    else if (firstShift == recordKey.firstShift)
+                        return 0;
                 }
             }
             return 1;
+        }
+
+        public static bool operator ==(RatingInformation left, RatingInformation right)
+        {
+            return left.CompareTo(right) == 0;
+        }
+        public static bool operator !=(RatingInformation left, RatingInformation right)
+        {
+            return left.CompareTo(right) != 0;
+        }
+        public static bool operator <(RatingInformation left, RatingInformation right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+        public static bool operator >(RatingInformation left, RatingInformation right)
+        {
+            return left.CompareTo(right) > 0;
         }
     }
     
