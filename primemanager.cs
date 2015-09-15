@@ -217,17 +217,6 @@ namespace Tests.Prime
             }
         }
 
-        struct CountLastPrime
-        {
-            public long count, lastPrime;
-
-            public CountLastPrime(long count, long lastPrime)
-            {
-                this.count = count;
-                this.lastPrime = lastPrime;
-            }
-        }
-        
         int GetCoreCount()
         {
             int coreCount = 0;
